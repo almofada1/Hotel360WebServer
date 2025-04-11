@@ -1,0 +1,61 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@using Hotel360WebServer.Data
+@using Hotel360WebServer.Models
+@inject DataContext dataService
+@attribute [Authorize]
+
+<EditForm Model="@registerModel" OnValidSubmit="HandleRegister" FormName="RegisterForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="form-floating mb-3">
+        <InputText id="floatingInput" class="form-control" placeholder="name@example.com" @bind-Value="registerModel.Email" />
+        <label for="floatingInput">Email address</label>
+    </div>
+
+    <div class="form-floating mb-3">
+        <InputText id="floatingPassword" type="password" class="form-control" placeholder="Password" @bind-Value="registerModel.Password" />
+        <label for="floatingPassword">Password</label>
+    </div>
+
+    <div class="form-floating mb-3">
+        <InputText id="floatingConfirmPassword" type="password" class="form-control" placeholder="Confirm password" @bind-Value="registerModel.ConfirmPassword" />
+        <label for="floatingConfirmPassword">Confirm password</label>
+    </div>
+
+    <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+</EditForm>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger">@errorMessage</p>
+}
+
+@code {
+    [SupplyParameterFromForm]
+
+    public RegisterModel registerModel { get; set; } = new();
+
+    private string errorMessage = string.Empty;
+
+    private async Task HandleRegister()
+    {
+        if (registerModel.Password != registerModel.ConfirmPassword)
+        {
+            errorMessage = "Passwords do not match.";
+            return;
+        }
+
+        bool success = await dataService.RegisterUserAsync(registerModel.Email, registerModel.Password);
+
+        if (success)
+        {
+            errorMessage = "Registration successful!";
+        }
+        else
+        {
+            errorMessage = "A user with that email already exists or registration failed.";
+        }
+    }
+}

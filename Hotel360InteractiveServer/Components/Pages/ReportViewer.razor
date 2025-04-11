@@ -1,0 +1,20 @@
+﻿@page "/viewer"
+@using DevExpress.Blazor.Reporting
+@using DevExpress.XtraReports.UI
+
+<h3>ReportViewer</h3>
+
+<DxReportViewer @ref="reportViewer" Report="@Report"></DxReportViewer>
+
+@code {
+    DxReportViewer? reportViewer;
+
+    XtraReport Report
+    {
+        get
+        {
+            var path = Path.Combine("Components", "Pages", "Reports", "XtraReport1.repx");
+            return XtraReport.FromFile(path, true);
+        }
+    }
+}

@@ -1,0 +1,92 @@
+﻿
+@using Hotel360InteractiveServer.Controller
+@using Hotel360InteractiveServer.Data
+@using Hotel360InteractiveServer.Models
+@inject IModalService Modal
+@inject ApplicationDbContext appContext
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
+
+<div class="row w-100">
+	<div class="col text-start">
+		<h5 class="modal-title"><strong>Nome: </strong>@CheckIn.NomeHospede @CheckIn.ApelidoHospede</h5>
+	</div>
+	<div class="col text-end">
+		<h5 class="modal-title"><strong>Código: </strong>@CheckIn.CodigoReserva</h5>
+	</div>
+</div>
+
+<div class="d-grid" style="grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10px; height: 300px; margin-top: 20px;">
+	<button class="btn btn-primary" @onclick="OpenUserModal">Ficha do Hospede</button>
+	<button class="btn btn-secondary" @onclick="SignRGPD">Assinar RGPD</button>
+	<button class="btn btn-success" @onclick="PrintRGPD">Imprimir RGPD</button>
+	<button class="btn btn-danger" @onclick="CheckInToHotel" disabled="@(CheckIn.CodigoEstadoReserva == "CKI")">Check-in</button>
+</div>
+
+
+@code {
+	[Parameter] public CheckIn CheckIn { get; set; }
+
+	private List<Wgcpaises> Paises;
+
+	protected override void OnInitialized()
+	{
+		GetPaises();
+		base.OnInitialized();
+	}
+
+	private async void OpenUserModal()
+	{
+		Terceiro terceiro = await CheckInsController.GetTerceiroAsync(appContext, CheckIn.CodigoHospede);
+
+		var parameters = new ModalParameters();
+		parameters.Add("Terceiro", terceiro);
+		parameters.Add("Paises", Paises);
+		var userModal = Modal.Show<UserModal>("Ficha do hóspede", parameters);
+	}
+
+	private async void CheckInToHotel()
+	{
+		try
+		{
+			Ocupado oc = await CheckInsController.VerificaOcupadosQuartoAsync(appContext, CheckIn);
+
+			if (oc != null)
+			{
+				if (oc.Codigo == null)
+				{
+					if (await CheckInsController.EfetuarCheckinAsync(appContext, CheckIn))
+					{
+						await CheckInsController.CarregaCheckinsDeDataAsync(appContext);
+						ToastService.ShowSuccess("Check-in " + CheckIn.CodigoReserva + " efetuado com sucesso!");
+					}
+				}
+				else
+				{
+					await CheckInsController.CarregaCheckinsDeDataAsync(appContext);
+					ToastService.ShowError("O quarto " + oc.Quarto + " está ocupado pela reserva " + oc.Codigo + "-" + oc.Linhareserva + "!\n Não é possivel efetuar check-in.");
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			Logs.Erro("Erro ao abrir documento", ex);
+		}
+	}
+
+	private async void SignRGPD()
+	{
+		NavigationManager.NavigateTo($"/assinar{CheckIn.CodigoHospede}",true);
+	}
+
+	private void PrintRGPD()
+	{
+
+	}
+
+
+	private async void GetPaises()
+	{
+		Paises = await CheckInsController.GetPaises(appContext);
+	}
+}

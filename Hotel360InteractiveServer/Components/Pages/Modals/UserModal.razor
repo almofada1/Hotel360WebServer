@@ -1,0 +1,164 @@
+﻿@using Hotel360InteractiveServer.Controller
+@using Hotel360InteractiveServer.Data
+@using Hotel360InteractiveServer.Models
+@using System.Reflection
+@using Microsoft.AspNetCore.Components.Forms
+@inject ApplicationDbContext dbContext
+@inject IToastService ToastService
+@inject IModalService Modal
+
+<EditForm Model="Terceiro" OnValidSubmit="SaveTerceiro">
+    <DataAnnotationsValidator />
+    <div class="form-group">
+        <label>Codigo</label>
+        <InputText @bind-Value="TempTerceiro.Codigo" class="form-control" disabled />
+    </div>
+    <div class="form-group">
+        <label>Nome</label>
+        <InputText @bind-Value="TempTerceiro.Nome" class="form-control" disabled />
+    </div>
+    <div class="form-group">
+        <label>Morada</label>
+        <InputText @bind-Value="TempTerceiro.morada" class="form-control" />
+        <ValidationMessage For="() => TempTerceiro.morada" />
+    </div>
+    <div class="form-group">
+        <label>Codigo Postal</label>
+        <InputText @bind-Value="TempTerceiro.codPostal" class="form-control" pattern="\d{4}-\d{3}"/>
+        <ValidationMessage For="() => TempTerceiro.codPostal" />
+    </div>
+    <div class="form-group">
+        <label>Localidade</label>
+        <InputText @bind-Value="TempTerceiro.localPostal" class="form-control"/>
+        <ValidationMessage For="() => TempTerceiro.localPostal" />
+    </div>
+    <div class="form-group">
+        <label>País</label>
+        <InputSelect @bind-Value="TempTerceiro.pais" class="form-control">
+            @foreach (var pais in Paises)
+            {
+                <option value="@pais.Codigo">@pais.Codigo - @pais.Nome</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => TempTerceiro.pais" />
+    </div>
+    <div class="form-group">
+        <label>Telefone</label>
+        <InputText @bind-Value="TempTerceiro.telefone" class="form-control" required />
+        <ValidationMessage For="() => TempTerceiro.telefone" />
+    </div>
+    <div class="form-group">
+        <label>Telemovel</label>
+        <InputText @bind-Value="TempTerceiro.telemovel" class="form-control" pattern="\d{9,15}"/>
+        <ValidationMessage For="() => TempTerceiro.telemovel" />
+    </div>
+    <div class="form-group">
+        <label>Sexo</label>
+        <InputRadioGroup @bind-Value="TempTerceiro.sexo">
+            <InputRadio Value="1" /> Masculino
+            <InputRadio Value="0" /> Feminino
+        </InputRadioGroup>
+        <ValidationMessage For="() => TempTerceiro.sexo" />
+    </div>
+    <div class="form-group">
+        <label>NIF</label>
+        <InputText @bind-Value="TempTerceiro.nContrib" class="form-control" pattern="\d{9}" required />
+        <ValidationMessage For="() => TempTerceiro.nContrib" />
+    </div>
+    <div class="form-group">
+        <label>Email</label>
+        <InputText @bind-Value="TempTerceiro.email" class="form-control" type="email"/>
+        <ValidationMessage For="() => TempTerceiro.email" />
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:10px">Salvar</button>
+</EditForm>
+
+@code {
+    [Parameter] public Terceiro Terceiro { get; set; }
+
+    [Parameter] public List<Wgcpaises> Paises { get; set; }
+
+    [SupplyParameterFromForm]
+    private Terceiro TempTerceiro { get; set; }
+
+    protected override void OnInitialized()
+    {
+        TempTerceiro = new Terceiro
+        {
+            Codigo = Terceiro.Codigo,
+            Nome = Terceiro.Nome,
+            morada = Terceiro.morada,
+            codPostal = Terceiro.codPostal,
+            localPostal = Terceiro.localPostal,
+            pais = Terceiro.pais,
+            telefone = Terceiro.telefone,
+            telemovel = Terceiro.telemovel,
+            sexo = Terceiro.sexo,
+            nContrib = Terceiro.nContrib,
+            email = Terceiro.email
+        };
+
+        base.OnInitialized();
+    }
+
+    public async Task SaveTerceiro()
+    {
+        if (!ArePropertiesEqual<Terceiro>(Terceiro, TempTerceiro))
+        {
+            bool x = await CheckInsController.UpdateTerceiro(dbContext, TempTerceiro);
+            if (x)
+            {
+                ToastService.ShowSuccess("Salvo com successo!");
+                Terceiro = new Terceiro
+                    {
+                        morada = TempTerceiro.morada,
+                        codPostal = TempTerceiro.codPostal,
+                        localPostal = TempTerceiro.localPostal,
+                        pais = TempTerceiro.pais,
+                        telefone = TempTerceiro.telefone,
+                        telemovel = TempTerceiro.telemovel,
+                        sexo = TempTerceiro.sexo,
+                        nContrib = TempTerceiro.nContrib,
+                        email = TempTerceiro.email
+                    };
+            }
+            else
+            {
+                ToastService.ShowError("Erro ao salvar.");
+            }
+        }
+        else
+        {
+            ToastService.ShowError("Nenhuma alteração detectada.");
+        }
+    }
+
+
+    public static bool ArePropertiesEqual<T>(T obj1, T obj2)
+    {
+        if (obj1 == null || obj2 == null)
+            return false;
+
+        if (ReferenceEquals(obj1, obj2))
+            return true;
+
+        Type type = typeof(T);
+        foreach (PropertyInfo property in type.GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            var value1 = property.GetValue(obj1);
+            var value2 = property.GetValue(obj2);
+
+            if (value1 == null || value2 == null)
+            {
+                if (value1 != value2)
+                    return false;
+            }
+            else if (!value1.Equals(value2))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+}

@@ -1,0 +1,193 @@
+﻿@page "/assinar{CodigoHospede}"
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@using Hotel360InteractiveServer.Controller
+@using Hotel360InteractiveServer.Data
+@using Hotel360InteractiveServer.Models
+@inject ApplicationDbContext dbContext
+@inject IToastService ToastService
+@inject IModalService Modal
+
+@if (isDataLoaded)
+{
+    <div class="progress mb-3">
+        <div class="progress-bar bg-primary" role="progressbar" style="width: @(currentStep * 100 / totalSteps)%;"
+        aria-valuenow="@currentStep" aria-valuemin="1" aria-valuemax="@totalSteps">
+            Passo @currentStep de @totalSteps
+        </div>
+    </div>
+
+    <EditForm Model="@wizardModel" OnValidSubmit="HandleFinish">
+        @if (currentStep == 1)
+        {
+            <div>
+                <h4>Step 1: Confirm Your Information</h4>
+                <p><strong>Código:</strong> @Terceiro.Codigo</p>
+                <p><strong>Nome:</strong> @Terceiro.Nome</p>
+                <p><strong>Morada:</strong> @Terceiro.morada</p>
+                <p><strong>Código Postal:</strong> @Terceiro.codPostal</p>
+                <p><strong>Localidade:</strong> @Terceiro.localPostal</p>
+                <p><strong>País:</strong> @Terceiro.pais</p>
+                <p><strong>Telefone:</strong> @Terceiro.telefone</p>
+                <p><strong>Telemóvel:</strong> @Terceiro.telemovel</p>
+                <p><strong>Sexo:</strong> @(Terceiro.sexo == 0 ? "Mulher" : "Homem")</p>
+                <p><strong>NIF:</strong> @Terceiro.nContrib</p>
+                <p><strong>Email:</strong> @Terceiro.email</p>
+
+                <label>
+                    <InputCheckbox @bind-Value="confirmationChecked" />
+                    Confirmo que os dados de faturação estão corretos.
+                </label>
+            </div>
+        }
+        else if (currentStep == 2)
+        {
+            <div class="form-group">
+                <p class="text-justify"><h3>@wizardModel.TextBox1</h3></p>
+            </div>
+            <div class="form-group">
+                <InputRadioGroup TValue="bool" @bind-Value="wizardModel.Radio1" class="custom-radio-group">
+                    <label class="custom-radio">
+                        <InputRadio Value="true" /> <span>Sim</span>
+                    </label>
+                    <label class="custom-radio">
+                        <InputRadio Value="false" /> <span>Não</span>
+                    </label>
+                </InputRadioGroup>
+            </div>
+
+            <div class="form-group">
+                <p class="text-justify"><h3>@wizardModel.TextBox2</h3></p>
+            </div>
+            <div class="form-group">
+                <InputRadioGroup TValue="bool" @bind-Value="wizardModel.Radio2" class="custom-radio-group">
+                    <label class="custom-radio">
+                        <InputRadio Value="true" /> <span>Sim</span>
+                    </label>
+                    <label class="custom-radio">
+                        <InputRadio Value="false" /> <span>Não</span>
+                    </label>
+                </InputRadioGroup>
+            </div>
+
+            <style>
+                /* Increase the size of the radio buttons */
+                .custom-radio input[type="radio"] {
+                    transform: scale(1.5); /* Adjust scale as needed */
+                    margin-right: 10px; /* Space between radio and text */
+                }
+
+                /* Increase text size */
+                .custom-radio span {
+                    font-size: 1.5rem; /* Adjust font size as needed */
+                }
+
+                /* Align radios and text properly */
+                .custom-radio {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px; /* Space between radio and text */
+                    margin-bottom: 10px; /* Add spacing between options */
+                }
+            </style>
+        }
+
+        else if (currentStep == 3)
+        {
+            <div>
+                <h4>Step 3: Signature</h4>
+                <!-- Using Blazor.SignaturePad by Marvin Klein -->
+                <SignaturePad @bind-Value="wizardModel.SignatureData" Width="800" Height="200" />
+                <br />
+            </div>
+        }
+
+        <div class="mt-3">
+            @if (currentStep > 1)
+            {
+                <button type="button" class="btn btn-primary mr-2" @onclick="PreviousStep">Previous</button>
+            }
+            @if (currentStep < totalSteps)
+            {
+                <button type="button" class="btn btn-primary mr-2" @onclick="NextStep"
+                        disabled="@(currentStep == 1 && !confirmationChecked || currentStep == 2 && !AreBothAnswersProvided)">
+                    Next
+                </button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-success" disabled="@(!IsSignatureCaptured)">Finish</button>
+            }
+        </div>
+    </EditForm>
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    [Parameter]
+    public string CodigoHospede { get; set; }
+
+    private int currentStep = 1;
+    private readonly int totalSteps = 3;
+    private WizardModel wizardModel = new WizardModel();
+    public Terceiro Terceiro;
+    private bool confirmationChecked;
+    private bool isDataLoaded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Terceiro = await CheckInsController.GetTerceiroAsync(dbContext, CodigoHospede);
+        var basePath = Directory.GetCurrentDirectory();
+        var path1 = Path.Combine(basePath, "wwwroot", "resources", "textosrgpd", "dados1.txt");
+        var path2 = Path.Combine(basePath, "wwwroot", "resources", "textosrgpd", "dados2.txt");
+
+        wizardModel.TextBox1 = await File.ReadAllTextAsync(path1);
+        wizardModel.TextBox2 = await File.ReadAllTextAsync(path2);
+
+        isDataLoaded = true;
+    }
+
+    private void NextStep()
+    {
+        if (currentStep < totalSteps)
+        {
+            currentStep++;
+        }
+    }
+
+    private void PreviousStep()
+    {
+        if (currentStep > 1)
+        {
+            currentStep--;
+        }
+    }
+
+    private void ClearSignature()
+    {
+        wizardModel.SignatureData = null;
+    }
+
+    private bool IsSignatureCaptured => wizardModel.SignatureData != null && wizardModel.SignatureData.Length > 0;
+
+    private bool AreBothAnswersProvided =>
+        (wizardModel.Radio1 || !wizardModel.Radio1) && (wizardModel.Radio2 || !wizardModel.Radio2);
+
+    private void HandleFinish()
+    {
+        // Final submission logic
+    }
+
+    public class WizardModel
+    {
+        public string? TextBox1 { get; set; }
+        public string? TextBox2 { get; set; }
+        public bool Radio1 { get; set; }
+        public bool Radio2 { get; set; }
+        public byte[]? SignatureData { get; set; }
+    }
+
+}

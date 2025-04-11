@@ -1,0 +1,47 @@
+@page "/login"
+@using Hotel360WebServer.Models
+@inject NavigationManager NavigationManager
+@attribute [AllowAnonymous]
+
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+    <div class="col-md-4">
+        <EditForm Model="@userModel" OnValidSubmit="HandleValidSubmit">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="form-floating mb-3">
+                <InputText id="floatingInput" class="form-control" placeholder="name@example.com" @bind-Value="userModel.Email" />
+                <label for="floatingInput">Email address</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputText id="floatingPassword" type="password" class="form-control" placeholder="Password" @bind-Value="userModel.Password" />
+                <label for="floatingPassword">Password</label>
+            </div>
+            <button type="submit" class="w-100 btn btn-lg btn-primary">Log in</button>
+        </EditForm>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <p class="text-danger">@errorMessage</p>
+}
+
+@code {
+    [SupplyParameterFromForm]
+    public UserModel userModel { get; set; } = new();
+
+    private string? errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        if ()
+        {
+        }
+        else
+        {
+            errorMessage = "Invalid email or password.";
+        }
+    }
+}

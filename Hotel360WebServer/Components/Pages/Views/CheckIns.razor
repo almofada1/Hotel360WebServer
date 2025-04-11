@@ -1,0 +1,79 @@
+﻿@page "/checkins"
+@attribute [Authorize]
+@inject DataContext dataService
+@inject IModalService Modal
+@using Hotel360WebServer.Components.Pages.Views.Modals
+@using Hotel360WebServer.Controller
+@using Hotel360WebServer.Data
+@using Hotel360WebServer.Models
+
+<PageTitle>Check-Ins</PageTitle>
+<h3>Check-Ins</h3>
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <h4>Data do hotel: @dia</h4>
+</div>
+
+<div class="container mt-4">
+    @if (checkins == null || !checkins.Any())
+    {
+        <p>Não existem check-ins para @dia</p>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var checkin in checkins)
+            {
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100" style="cursor: pointer;" @onclick="() => ShowModal(checkin)">
+                        <div class="card-body">
+                            <h4 class="card-title"><strong>Reserva: </strong>@checkin.CodigoReserva</h4>
+                            <p class="card-text">
+                                <strong>Nome:</strong> @checkin.NomeHospede<br />
+                                <strong>Apelido:</strong> @checkin.ApelidoHospede<br />
+                                <strong>Quarto:</strong> @checkin.CodigoAlojamento<br />
+                                <strong>Package:</strong> @checkin.CodigoPackage<br />
+                                <strong>Check-In:</strong> @checkin.DataCheckIn.ToString("dd-MM-yyyy")<br />
+                                <strong>Check-Out:</strong> @checkin.DataCheckOut.ToString("dd-MM-yyyy")<br />
+                            </p>
+                        </div>
+
+                        <div class="card-footer" style="@GetFooterStyle(checkin)">
+                            @checkin.CodigoEstadoReserva
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<CheckIn> checkins = new List<CheckIn>();
+    private string? dia;
+
+    protected override async Task OnInitializedAsync()
+    {
+        dia = (await CheckInsController.GetDia(dataService)).ToString("dd-MM-yyyy");
+        checkins = await CheckInsController.CarregaCheckinsDeDataAsync(dataService);
+    }
+
+    private void ShowModal(CheckIn checkin)
+    {
+        var parameters = new ModalParameters();
+        parameters.Add("CheckIn", checkin);
+        Modal.Show<CheckInsModal>("Ficha de cliente", parameters);
+    }
+
+    private string GetFooterStyle(CheckIn checkin)
+    {
+        if (checkin.CodigoEstadoReserva == "CKI")
+        {
+            return "background-color: green; color: white; font-weight: bold;";
+        }
+        else
+        {
+            return "background-color: red; color: white; font-weight: bold;";
+        }
+    }
+}
