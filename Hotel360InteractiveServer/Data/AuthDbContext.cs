@@ -2,10 +2,14 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
-public class AuthDbContext : IdentityDbContext<ApplicationUser>
+
+namespace Hotel360InteractiveServer.Data
 {
-    public AuthDbContext(DbContextOptions<AuthDbContext> options)
-        : base(options)
+    public class AuthDbContext(DbContextOptions<AuthDbContext> options) : IdentityDbContext<ApplicationUser>(options)
     {
+        private readonly string? _connectionString;
+
+        public AuthDbContext(DbContextOptions<AuthDbContext> options, IConfiguration configuration)
+        : this(options) => _connectionString = configuration.GetConnectionString("AuthConnection")!;
     }
 }

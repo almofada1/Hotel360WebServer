@@ -45,7 +45,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 var authDbConnection = builder.Configuration.GetConnectionString("AuthConnection")
     ?? throw new InvalidOperationException("Connection string 'AuthConnection' not found.");
 builder.Services.AddDbContext<AuthDbContext>(options =>
-    options.UseSqlServer(authDbConnection));
+options.UseSqlServer(authDbConnection));
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
