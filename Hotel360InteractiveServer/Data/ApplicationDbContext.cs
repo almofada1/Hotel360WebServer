@@ -1,9 +1,9 @@
-using System.Data.Common;
 using System.Data;
+using System.Data.Common;
+using Dapper;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Dapper;
 
 namespace Hotel360InteractiveServer.Data
 {

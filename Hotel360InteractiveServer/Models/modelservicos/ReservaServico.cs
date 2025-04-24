@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace Hotel360InteractiveServer.Models
+﻿namespace Hotel360InteractiveServer.Models
 {
     class ReservaServico
     {
@@ -17,7 +12,7 @@ namespace Hotel360InteractiveServer.Models
         public int NumeroCriancas { get; set; }
         public int NumeroBebes { get; set; }
 
-        
+
         public DateTime CheckIn { get; set; }
         public DateTime CheckOut { get; set; }
         public DateTime HoraChegada { get; set; }
@@ -25,7 +20,7 @@ namespace Hotel360InteractiveServer.Models
         public DateTime DataInicio { get; set; }
         public DateTime DataFim { get; set; }
         public string CodigoAlojamento { get; set; }
-        
+
         public string Observacoes { get; set; }
         public string NomeHospede { get; set; }
         public string ApelidoHospede { get; set; }

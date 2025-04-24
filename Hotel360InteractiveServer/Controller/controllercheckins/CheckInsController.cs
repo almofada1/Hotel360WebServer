@@ -1,8 +1,6 @@
 ﻿using System.Data;
-using Microsoft.Data.SqlClient;
-using Hotel360InteractiveServer.Models;
-using Dapper;
 using Hotel360InteractiveServer.Data;
+using Hotel360InteractiveServer.Models;
 
 namespace Hotel360InteractiveServer.Controller
 {
@@ -189,7 +187,7 @@ namespace Hotel360InteractiveServer.Controller
                 };
 
                 var result = await dbContext.QueryAsync<Ocupado>(sql, parameters);
-                return result.FirstOrDefault()??new Ocupado();
+                return result.FirstOrDefault() ?? new Ocupado();
             }
             catch (Exception ex)
             {

@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Hotel360InteractiveServer.Models
+﻿namespace Hotel360InteractiveServer.Models
 {
     public class CheckIn
     {

@@ -1,10 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using Hotel360InteractiveServer.Controller;
+﻿using Hotel360InteractiveServer.Controller;
 using Hotel360InteractiveServer.Models;
+using Microsoft.Data.SqlClient;
 
 namespace Hotel360InteractiveServer.ControllerServicos
 {
@@ -17,7 +13,7 @@ namespace Hotel360InteractiveServer.ControllerServicos
                 List<ReservaServico> ListaReservaServico = new List<ReservaServico>();
                 using (var connection = new SqlConnection(Sessao.SQLServerConnectionString))
                 {
-                    connection.Open(); 
+                    connection.Open();
 
                     string sql = string.Format(@"SELECT R2.*, R.Observacoes as Observacoes
                                                 FROM whotreservas AS R  INNER JOIN (SELECT SUM(CASE WHEN isnull(E.tipo,255)=1 THEN 1 ELSE 0 END) AS nbercos, SUM(CASE WHEN isnull(E.tipo,255)=0 AND isnull(E.tipocama,0)=1 THEN 1 ELSE 0 END) AS ncamascasal, SUM(CASE WHEN isnull(E.tipo,255)=0 AND isnull(E.tipocama,0)=0 THEN 1 ELSE 0 END) AS ncamasind, R.Unidade AS Unidade, R.Codigo AS CodigoReserva, R.LinhaReserva AS LinhaReserva, R.TipoReserva AS EstadoReserva, R.NrAdultos AS NumeroAdultos, R.NrCriancas AS NumeroCriancas, R.NrBercos AS NumeroBebes, R.CheckIn AS CheckIn, R.CheckOut AS CheckOut, R.HoraChegada AS HoraChegada, R.HoraSaida AS HoraPartida, RA.DataInicio AS DataInicio, RA.DataFim AS DataFim, RA.Alojamento AS CodigoAlojamento, T1.Codigo AS CodigoHospede, IsNull(T1.Nome,'') AS NomeHospede, IsNull(T1.Apelido,'') AS ApelidoHospede, T2.Codigo AS CodigoGrupo, IsNull(T2.Nome,'') AS NomeGrupo, IsNull(T2.Apelido,'') AS ApelidoGrupo
@@ -60,7 +56,7 @@ namespace Hotel360InteractiveServer.ControllerServicos
                     }
                 }
 
-                if(ListaReservaServico.Count() > 0)
+                if (ListaReservaServico.Count() > 0)
                 {
                     List<ServicoGovernanta> listaServicos = GetServicosData(dataDe, dataAte);
                     foreach (var servico in listaServicos)
@@ -68,7 +64,7 @@ namespace Hotel360InteractiveServer.ControllerServicos
                         List<ReservaServico> rs = ListaReservaServico.Where(X => X.CodigoReserva == servico.CodigoReserva && X.LinhaReserva == servico.LinhaReserva).ToList();
                         foreach (var s in rs)
                         {
-                            s.listaServicos = s.listaServicos  + servico.DescricaoServico+ "; \n";
+                            s.listaServicos = s.listaServicos + servico.DescricaoServico + "; \n";
                         }
                     }
                 }

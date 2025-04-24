@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Hotel360InteractiveServer.Models;
 using Microsoft.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Hotel360InteractiveServer.Models;
 
 namespace Hotel360InteractiveServer.Controller
 {
@@ -41,12 +36,12 @@ namespace Hotel360InteractiveServer.Controller
                 }
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                Logs.Erro("CarregaPisos",ex);
+                Logs.Erro("CarregaPisos", ex);
                 return false;
             }
-            
+
 
         }
     }

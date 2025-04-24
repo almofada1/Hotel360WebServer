@@ -1,7 +1,247 @@
 ﻿@page "/refeicoes"
 @attribute [Authorize(Roles = "Admin, Refeições")]
+@using System.Globalization
+@using Hotel360InteractiveServer.Controller
+@using Hotel360InteractiveServer.Data
+@using Hotel360InteractiveServer.Models
+@inject ApplicationDbContext dbContext
+
 <h3>Refeições</h3>
 
-@code {
+@if (IsLoadingPage)
+{
+    <div class="spinner-border text-primary" role="status">
+        <span class="sr-only">Loading…</span>
+    </div>
+}
+else
+{
+    <!-- Top Bar: Date Pickers only -->
+    <div class="bg-white py-2 mb-3">
+        <div class="container">
+            <div class="row justify-content-center align-items-center">
+                <div class="col-auto">
+                    <label class="form-label mb-0 me-2">De</label>
+                    <input type="date"
+                    class="form-control"
+                    @bind="From"
+                    onkeydown="return false"
+                    onpaste="return false" />
+                </div>
+                <div class="col-auto">
+                    <label class="form-label mb-0 me-2">Até</label>
+                    <input type="date"
+                    class="form-control"
+                    @bind="To"
+                    onkeydown="return false"
+                    onpaste="return false" />
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Cards Section -->
+    @if (IsLoadingData)
+    {
+        <div class="text-center mb-3">
+            <div class="spinner-border text-secondary" role="status">
+                <span class="sr-only">Updating…</span>
+            </div>
+        </div>
+    }
+    else{
+        <div class="container mb-4">
+            <div class="d-flex justify-content-center gap-3 flex-wrap">
+                @foreach (var m in new[] { MealType.PequenoAlmoco, MealType.Almoco, MealType.Jantar })
+                {
+                    var (adults, children) = MealTotals[m];
+                    var totalCount = adults + children;
+
+                    <div class="col-md-3 col-sm-6 mb-2"
+                         @onclick="() => OnMealSelected(m)"
+                         style="cursor:pointer; max-width:240px">
+                        <SummaryCard Title="@(m == MealType.PequenoAlmoco ? "Pequenos Almoços" : m == MealType.Almoco ? "Almoços" : "Jantares")"
+                                     Count="@totalCount"
+                                     Caption="@($"C {children} / A {adults}")"
+                                     Background="@(SelectedMeal == m ? "bg-primary text-white" : "bg-secondary bg-opacity-50 text-dark")"
+                                     Icon="@(m == MealType.PequenoAlmoco ? "fa-coffee" : m == MealType.Almoco ? "fa-utensils" : "fa-drumstick-bite")" />
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="container">
+            <table class="table table-striped mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th style="width:30%">Data</th>
+                        <th style="width:20%">Adultos</th>
+                        <th style="width:20%">Crianças</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (var i = 0; i < FilteredGrouped.Count; i++)
+                    {
+                        var day = FilteredGrouped[i];
+                        var detailId = $"detail{i}";
+
+                        <!-- Entire row is now clickable -->
+                        <tr class="clickable-row"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@detailId"
+                            aria-expanded="false"
+                            aria-controls="@detailId"
+                            style="cursor:pointer">
+                            <td>@day.Date.ToString("dd/MM/yyyy")</td>
+                            <td>@day.Entries.Sum(e => e.NumeroAdultos)</td>
+                            <td>@day.Entries.Sum(e => e.NumeroCriancas)</td>
+                            <td><i class="fas fa-chevron-down"></i></td>
+                        </tr>
+
+                        <tr class="collapse bg-white" id="@detailId">
+                            <td colspan="4" class="p-0">
+                                <table class="table table-sm mb-0">
+                                    <thead>
+                                        <tr class="table-active">
+                                            <th>Adultos</th>
+                                            <th>Crianças</th>
+                                            <th>Nome</th>
+                                            <th>Apelido</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var e in day.Entries)
+                                        {
+                                            <tr>
+                                                <td>@e.NumeroAdultos</td>
+                                                <td>@e.NumeroCriancas</td>
+                                                <td>@e.NomeHospede</td>
+                                                <td>@e.ApelidoHospede</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+}
+
+@code {
+    private DateTime _from = DateTime.Today.AddDays(-1);
+    private DateTime From
+    {
+        get => _from;
+        set
+        {
+            if (_from != value)
+            {
+                _from = value;
+                _ = ReloadData();
+            }
+        }
+    }
+
+    private DateTime _to = DateTime.Today;
+    private DateTime To
+    {
+        get => _to;
+        set
+        {
+            if (_to != value)
+            {
+                _to = value;
+                _ = ReloadData();
+            }
+        }
+    }
+
+    private bool IsLoadingPage { get; set; } = true;
+    private bool IsLoadingData { get; set; }
+
+    private List<Refeicao> RawList { get; set; } = new();
+    private List<DayGroup> FilteredGrouped { get; set; } = new();
+
+    // holds (adults, children) for each meal type
+    private Dictionary<MealType, (int Adults, int Children)> MealTotals { get; set; }
+
+    enum MealType { PequenoAlmoco, Almoco, Jantar }
+    private MealType SelectedMeal { get; set; } = MealType.PequenoAlmoco;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        IsLoadingPage = false;
+    }
+
+    private async Task ReloadData()
+    {
+        IsLoadingData = true;
+        StateHasChanged();               // show spinner
+
+        await LoadData();                // fetch & apply filter
+
+        IsLoadingData = false;
+        StateHasChanged();               // hide spinner & show updated UI
+    }
+
+
+    private async Task LoadData()
+    {
+        RawList = (await RefeicoesController.GetRefeicoesData(dbContext, From, To)).ToList();
+
+        MealTotals = new Dictionary<MealType, (int, int)>
+        {
+            [MealType.PequenoAlmoco] = (
+                Adults: RawList.Where(r => r.PequenoAlmoco).Sum(r => r.NumeroAdultos),
+                Children: RawList.Where(r => r.PequenoAlmoco).Sum(r => r.NumeroCriancas)
+            ),
+            [MealType.Almoco] = (
+                Adults: RawList.Where(r => r.Almoco).Sum(r => r.NumeroAdultos),
+                Children: RawList.Where(r => r.Almoco).Sum(r => r.NumeroCriancas)
+            ),
+            [MealType.Jantar] = (
+                Adults: RawList.Where(r => r.Jantar).Sum(r => r.NumeroAdultos),
+                Children: RawList.Where(r => r.Jantar).Sum(r => r.NumeroCriancas)
+            )
+        };
+
+        ApplyFilter();
+    }
+
+    private void OnMealSelected(MealType m)
+    {
+        SelectedMeal = m;
+        ApplyFilter();
+    }
+
+
+    private void ApplyFilter()
+    {
+        var filtered = SelectedMeal switch
+        {
+            MealType.PequenoAlmoco => RawList.Where(r => r.PequenoAlmoco),
+            MealType.Almoco => RawList.Where(r => r.Almoco),
+            MealType.Jantar => RawList.Where(r => r.Jantar),
+        };
+
+
+        FilteredGrouped = filtered
+            .GroupBy(r => r.DataRefeicao.Date)
+            .OrderBy(g => g.Key)
+            .Select(g => new DayGroup { Date = g.Key, Entries = g.ToList() })
+            .ToList();
+    }
+
+    class DayGroup
+    {
+        public DateTime Date { get; set; }
+        public List<Refeicao> Entries { get; set; } = new();
+    }
 }

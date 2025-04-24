@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Hotel360InteractiveServer.Models;
 using Microsoft.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Hotel360InteractiveServer.Models;
 
 namespace Hotel360InteractiveServer.Controller
 {
     class EstadosQuarto
     {
 
-        public static  List<EstadoQuarto> ListaEstadosQuarto;
+        public static List<EstadoQuarto> ListaEstadosQuarto;
 
         public static bool CarregaEstados()
         {
@@ -48,7 +43,8 @@ namespace Hotel360InteractiveServer.Controller
                     }
                 }
                 return true;
-            } catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 Logs.Erro("CarregaEstados", ex);
                 return false;
