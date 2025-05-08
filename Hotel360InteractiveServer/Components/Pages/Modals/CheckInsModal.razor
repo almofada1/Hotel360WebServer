@@ -6,6 +6,7 @@
 @inject ApplicationDbContext appContext
 @inject IToastService ToastService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <div class="row w-100">
 	<div class="col text-start">
@@ -19,7 +20,7 @@
 <div class="d-grid" style="grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 10px; height: 300px; margin-top: 20px;">
 	<button class="btn btn-primary" @onclick="OpenUserModal">Ficha do Hospede</button>
 	<button class="btn btn-secondary" @onclick="SignRGPD">Assinar RGPD</button>
-	<button class="btn btn-success" @onclick="PrintRGPD">Imprimir RGPD</button>
+	<button class="btn btn-success" @onclick="PrintRGPD" disabled="@(!isPdfAvailable)">Imprimir RGPD</button>
 	<button class="btn btn-danger" @onclick="CheckInToHotel" disabled="@(CheckIn.CodigoEstadoReserva == "CKI")">Check-in</button>
 </div>
 
@@ -28,10 +29,13 @@
 	[Parameter] public CheckIn CheckIn { get; set; }
 
 	private List<Wgcpaises> Paises;
+	private bool isPdfAvailable = false;
 
 	protected override void OnInitialized()
 	{
 		GetPaises();
+		var pdfPath = Path.Combine("wwwroot", "resources", "assinaturas", $"RGPD_{CheckIn.CodigoHospede}.pdf");
+		isPdfAvailable = File.Exists(pdfPath);
 		base.OnInitialized();
 	}
 
@@ -79,9 +83,10 @@
 		NavigationManager.NavigateTo($"/assinar{CheckIn.CodigoHospede}",true);
 	}
 
-	private void PrintRGPD()
+	private async void PrintRGPD()
 	{
-
+		var pdfUrl = $"resources/assinaturas/RGPD_{CheckIn.CodigoHospede}.pdf";
+		await JSRuntime.InvokeVoidAsync("openAndPrintPdf", pdfUrl);
 	}
 
 

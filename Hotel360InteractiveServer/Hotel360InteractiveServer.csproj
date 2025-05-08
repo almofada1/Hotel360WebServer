@@ -23,4 +23,8 @@
     <PackageReference Include="System.Drawing.Common" Version="8.0.11" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\resources\assinaturas\" />
+  </ItemGroup>
+
 </Project>

@@ -117,4 +117,10 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="xrLabel26.Text" xml:space="preserve">
+    <value>Adicionalmente, gostaria de receber ofertas personalizadas de produtos e serviços que tenham sido identificadas com base nas minhas preferências pessoais e comportamentos, a partir da utilização de produtos e serviços do Lisotel - Hotel &amp; Spa. Para o efeito, consinto que os meus dados pessoais sejam utilizados para criar um perfil individual de cliente através de um procedimento de estatística, para receber comunicações de marketing com conteúdos que sejam relevante para mim.</value>
+  </data>
+  <data name="xrLabel24.Text" xml:space="preserve">
+    <value>Gostaria de receber comunicações de marketing do Lisotel - Hotel &amp; Spa através de e-mail, correio ou serviços de telefone/mensagem. Para o efeito, consinto que o Lisotel - Hotel &amp; Spa trate e utilize os meus dados pessoais fornecidos.</value>
+  </data>
 </root>

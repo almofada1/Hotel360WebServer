@@ -18,6 +18,15 @@
     <Routes @rendermode="@RenderModeForPage" />
     <script src="_framework/blazor.web.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+    <script>
+        function openAndPrintPdf(url) {
+            const printWindow = window.open(url, '_blank');
+            printWindow.focus();
+            printWindow.onload = function () {
+                printWindow.print();
+            };
+        }
+    </script>
 </body>
 
 </html>

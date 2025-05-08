@@ -1,9 +1,11 @@
 ﻿@page "/assinar{CodigoHospede}"
+@using Hotel360InteractiveServer.Components.Pages.Reports
 @using Microsoft.AspNetCore.Components.Forms
 @using System.IO
 @using Hotel360InteractiveServer.Controller
 @using Hotel360InteractiveServer.Data
 @using Hotel360InteractiveServer.Models
+@using System.Text
 @inject ApplicationDbContext dbContext
 @inject IToastService ToastService
 @inject IModalService Modal
@@ -105,18 +107,18 @@
         <div class="mt-3">
             @if (currentStep > 1)
             {
-                <button type="button" class="btn btn-primary mr-2" @onclick="PreviousStep">Previous</button>
+                <button type="button" class="btn btn-primary mr-2" @onclick="PreviousStep">Anterior</button>
             }
             @if (currentStep < totalSteps)
             {
                 <button type="button" class="btn btn-primary mr-2" @onclick="NextStep"
                         disabled="@(currentStep == 1 && !confirmationChecked || currentStep == 2 && !AreBothAnswersProvided)">
-                    Next
+                    Próximo
                 </button>
             }
             else
             {
-                <button type="submit" class="btn btn-success" disabled="@(!IsSignatureCaptured)">Finish</button>
+                <button type="submit" class="btn btn-success" disabled="@(!IsSignatureCaptured)">Guardar</button>
             }
         </div>
     </EditForm>
@@ -128,7 +130,7 @@ else
 
 @code {
     [Parameter]
-    public string CodigoHospede { get; set; }
+    public string? CodigoHospede { get; set; }
 
     private int currentStep = 1;
     private readonly int totalSteps = 3;
@@ -139,7 +141,7 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Terceiro = await CheckInsController.GetTerceiroAsync(dbContext, CodigoHospede);
+        Terceiro = await CheckInsController.GetTerceiroAsync(dbContext, CodigoHospede!);
         var basePath = Directory.GetCurrentDirectory();
         var path1 = Path.Combine(basePath, "wwwroot", "resources", "textosrgpd", "dados1.txt");
         var path2 = Path.Combine(basePath, "wwwroot", "resources", "textosrgpd", "dados2.txt");
@@ -176,11 +178,84 @@ else
     private bool AreBothAnswersProvided =>
         (wizardModel.Radio1 || !wizardModel.Radio1) && (wizardModel.Radio2 || !wizardModel.Radio2);
 
-    private void HandleFinish()
+    private async Task HandleFinish()
     {
-        // Final submission logic
-    }
+        try
+        {
+            // 1. Ensure signature captured
+            if (!IsSignatureCaptured)
+            {
+                ToastService.ShowWarning("Por favor, faça a assinatura antes de continuar.");
+                return;
+            }
 
+            // 1. Interpret the incoming bytes as UTF‑8 text:
+            var base64WithHeader = Encoding.UTF8.GetString(wizardModel.SignatureData!);
+
+            // 2. Remove the "data:image/png;base64," prefix if present:
+            var header = "data:image/png;base64,";
+            var base64 = base64WithHeader.StartsWith(header)
+                ? base64WithHeader.Substring(header.Length)
+                : base64WithHeader;
+
+            // 3. Convert from Base64 to raw PNG bytes:
+            var imageBytes = Convert.FromBase64String(base64);
+
+            var fileName = $"{Terceiro.Codigo}.png";
+            var wwwroot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var sigFolder = Path.Combine(wwwroot, "resources", "assinaturas");
+            Directory.CreateDirectory(sigFolder);
+            var filePath = Path.Combine(sigFolder, fileName);
+            // Save the **decoded** PNG bytes
+            await File.WriteAllBytesAsync(filePath, imageBytes);
+
+            // Quick sanity check:
+            var info = new FileInfo(filePath);
+            if (!info.Exists || info.Length < 100)
+            {
+                ToastService.ShowError("Arquivo PNG inválido após decodificação.");
+                return;
+            }
+
+            // 3. Instantiate report
+            var report = new RGPD();
+
+            // 4. Assign Terceiro fields to report parameters
+            report.Parameters["pNome"].Value = Terceiro.Nome;
+            report.Parameters["pMorada"].Value = Terceiro.morada;
+            report.Parameters["pCodigoPostal"].Value = Terceiro.codPostal;
+            report.Parameters["pNacionalidade"].Value = Terceiro.pais;
+            report.Parameters["pNIF"].Value = Terceiro.nContrib;
+            report.Parameters["pTelefone"].Value = Terceiro.telefone;
+            report.Parameters["pTelemovel"].Value = Terceiro.telemovel;
+            report.Parameters["pEmail"].Value = Terceiro.email;
+
+            // 5. Assign consent booleans from wizardModel.Radio1/Radio2
+            report.Parameters["pConsentMail"].Value = wizardModel.Radio1;
+            report.Parameters["pConsentPromo"].Value = wizardModel.Radio2;
+
+            // 6. Assign signature URL
+            report.Parameters["pAssinatura"].Value = filePath;
+
+            // 7. Hide all parameters in output
+            foreach (var p in report.Parameters)
+                p.Visible = false;
+
+            // 8. Export to PDF
+            var pdfFolder = Path.Combine(wwwroot, "resources", "assinaturas");
+            Directory.CreateDirectory(pdfFolder);
+            var pdfPath = Path.Combine(pdfFolder, $"RGPD_{Terceiro.Codigo}.pdf");
+            report.ExportToPdf(pdfPath);
+
+            // 9. Notify user
+            ToastService.ShowSuccess($"Documento RGPD gerado em: {pdfPath}");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Erro ao gerar documento: {ex.Message}");
+        }
+    }
+    
     public class WizardModel
     {
         public string? TextBox1 { get; set; }

@@ -1,20 +1,13 @@
-﻿@page "/viewer"
+﻿@* @page "/viewer" *@
+@attribute [Authorize(Roles = "Admin")]
 @using DevExpress.Blazor.Reporting
 @using DevExpress.XtraReports.UI
+@using Hotel360InteractiveServer.Components.Pages.Reports  @* adjust namespace *@
 
 <h3>ReportViewer</h3>
 
-<DxReportViewer @ref="reportViewer" Report="@Report"></DxReportViewer>
+<DxReportViewer Report="@Report" />
 
 @code {
-    DxReportViewer? reportViewer;
-
-    XtraReport Report
-    {
-        get
-        {
-            var path = Path.Combine("Components", "Pages", "Reports", "XtraReport1.repx");
-            return XtraReport.FromFile(path, true);
-        }
-    }
+    XtraReport Report => new RGPD();
 }
