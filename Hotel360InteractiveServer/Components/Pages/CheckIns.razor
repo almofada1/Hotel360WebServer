@@ -1,11 +1,10 @@
 ﻿@page "/checkins"
+@using Microsoft.AspNetCore.WebUtilities
 @attribute [Authorize(Roles = "Admin, Check-Ins")]
 @inject ApplicationDbContext dbContext
 @inject IModalService Modal
-@using Hotel360InteractiveServer.Components.Pages.Modals
-@using Hotel360InteractiveServer.Controller
-@using Hotel360InteractiveServer.Data
-@using Hotel360InteractiveServer.Models
+@inject IToastService ToastService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Check-Ins</PageTitle>
 <h3>Check-Ins</h3>
@@ -50,7 +49,11 @@
 
 
 @code {
-    private List<CheckIn> checkins = new List<CheckIn>();
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "reserva")]
+    public string? CodigoReserva { get; set; }
+
+    private static List<CheckIn> checkins = new List<CheckIn>();
     private string? dia;
 
     protected override async Task OnInitializedAsync()
@@ -59,11 +62,47 @@
         checkins = await CheckInsController.CarregaCheckinsDeDataAsync(dbContext);
     }
 
-    private void ShowModal(CheckIn checkin)
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(CodigoReserva))
+        {
+            // 1) Abre o modal para a reserva
+            var current = checkins.FirstOrDefault(ci => ci.CodigoReserva == CodigoReserva);
+            if (current != null)
+            {
+                var parameters = new ModalParameters();
+                parameters.Add("CheckIn", current);
+                Modal.Show<CheckInsModal>("Ficha de cliente", parameters);
+            }
+            else
+            {
+                ToastService.ShowError("Reserva não encontrada.");
+            }
+
+            // 2) Limpa apenas o parâmetro ‘reserva’ da URL, sem reload de componente
+            var uri = new Uri(NavigationManager.Uri);
+            var queryDict = QueryHelpers.ParseQuery(uri.Query);
+            queryDict.Remove("reserva");
+            var newQuery = QueryString.Create(
+                queryDict.SelectMany(kvp => kvp.Value,
+                                     (kvp, val) => new KeyValuePair<string, string?>(kvp.Key, val))
+            );
+            var newUri = uri.GetLeftPart(UriPartial.Path) + newQuery;
+            NavigationManager.NavigateTo(newUri, replace: true);
+            //NAOPOOOOOOOOOOOO FUCNIONA
+        }
+    }
+
+    private async void ShowModal(CheckIn checkin)
     {
         var parameters = new ModalParameters();
         parameters.Add("CheckIn", checkin);
-        Modal.Show<CheckInsModal>("Ficha de cliente", parameters);
+        var modalRef = Modal.Show<CheckInsModal>("Ficha de cliente", parameters);
+        var result = await modalRef.Result;
+        if(result.Confirmed){
+            checkins = await CheckInsController.CarregaCheckinsDeDataAsync(dbContext);
+            StateHasChanged();
+        }
     }
 
     private string GetFooterStyle(CheckIn checkin)

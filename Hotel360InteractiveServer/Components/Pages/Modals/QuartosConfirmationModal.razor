@@ -1,0 +1,25 @@
+﻿@inject IModalService ModalService
+@inherits ComponentBase
+
+<div class="modal-body">
+    <p>Deseja mesmo mudar o estado dos quartos?</p>
+    <ul>
+        @foreach (var ch in Changes)
+        {
+        <li>@($"{ch.Codigo}: {ch.Old} → {ch.New}")</li>
+        }
+    </ul>
+</div>
+<div class="modal-footer">
+    <button class="btn btn-danger" @onclick="Cancel">Não</button>
+    <button class="btn btn-secondary" @onclick="Confirm">Sim</button>
+</div>
+
+@code {
+  [CascadingParameter] BlazoredModalInstance ModalInstance { get; set; } = default!;
+
+  [Parameter] public List<(string Codigo, string Old, string New)> Changes { get; set; } = new();
+
+  private Task Cancel()   => ModalInstance.CancelAsync();
+  private Task Confirm()  => ModalInstance.CloseAsync(ModalResult.Ok(true));
+}

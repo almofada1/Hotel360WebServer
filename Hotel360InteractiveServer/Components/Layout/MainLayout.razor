@@ -1,6 +1,24 @@
 ﻿@inherits LayoutComponentBase
 @using Blazored.Modal
 
+<style>
+    /* Make toasts sit on top of everything (including sticky navbars) */
+    .blazored-toast-container,
+    .blazored-toast,
+    .toast-container,
+    .toast {
+        z-index: 2000 !important;
+    }
+    /* in your site.css or scoped in _Host.cshtml / MainLayout.razor */
+    .blazored-modal {
+        z-index: 1100; /* dialog sits above navbar */
+    }
+
+    .bm-container {
+        z-index: 1050; /* backdrop dims everything up to the navbar level */
+    }
+</style>
+
 <div class="page">
     <div class="sidebar">
         <NavMenu />

@@ -1,10 +1,11 @@
 ﻿@implements IDisposable
 
 @inject NavigationManager NavigationManager
+@inject DatabaseInfoService DbInfo
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Hotel360InteractiveServer</a>
+        <a class="navbar-brand" href="">Hotel360-@DbInfo.DefaultDatabaseName</a>
     </div>
 </div>
 

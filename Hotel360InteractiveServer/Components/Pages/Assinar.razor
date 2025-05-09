@@ -1,4 +1,4 @@
-﻿@page "/assinar{CodigoHospede}"
+﻿@page "/assinar"
 @using Hotel360InteractiveServer.Components.Pages.Reports
 @using Microsoft.AspNetCore.Components.Forms
 @using System.IO
@@ -9,6 +9,8 @@
 @inject ApplicationDbContext dbContext
 @inject IToastService ToastService
 @inject IModalService Modal
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
 @if (isDataLoaded)
 {
@@ -75,21 +77,21 @@
             <style>
                 /* Increase the size of the radio buttons */
                 .custom-radio input[type="radio"] {
-                    transform: scale(1.5); /* Adjust scale as needed */
-                    margin-right: 10px; /* Space between radio and text */
+                transform: scale(1.5); /* Adjust scale as needed */
+                margin-right: 10px; /* Space between radio and text */
                 }
 
                 /* Increase text size */
                 .custom-radio span {
-                    font-size: 1.5rem; /* Adjust font size as needed */
+                font-size: 1.5rem; /* Adjust font size as needed */
                 }
 
                 /* Align radios and text properly */
                 .custom-radio {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px; /* Space between radio and text */
-                    margin-bottom: 10px; /* Add spacing between options */
+                display: flex;
+                align-items: center;
+                gap: 10px; /* Space between radio and text */
+                margin-bottom: 10px; /* Add spacing between options */
                 }
             </style>
         }
@@ -112,7 +114,7 @@
             @if (currentStep < totalSteps)
             {
                 <button type="button" class="btn btn-primary mr-2" @onclick="NextStep"
-                        disabled="@(currentStep == 1 && !confirmationChecked || currentStep == 2 && !AreBothAnswersProvided)">
+                disabled="@(currentStep == 1 && !confirmationChecked || currentStep == 2 && !AreBothAnswersProvided)">
                     Próximo
                 </button>
             }
@@ -130,12 +132,17 @@ else
 
 @code {
     [Parameter]
+    [SupplyParameterFromQuery(Name = "reserva")]
+    public string? CodigoReserva { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "hospede")]
     public string? CodigoHospede { get; set; }
 
     private int currentStep = 1;
     private readonly int totalSteps = 3;
     private WizardModel wizardModel = new WizardModel();
-    public Terceiro Terceiro;
+    public Terceiro? Terceiro;
     private bool confirmationChecked;
     private bool isDataLoaded = false;
 
@@ -248,7 +255,12 @@ else
             report.ExportToPdf(pdfPath);
 
             // 9. Notify user
-            ToastService.ShowSuccess($"Documento RGPD gerado em: {pdfPath}");
+            var pdfUrl = $"resources/assinaturas/RGPD_{Terceiro.Codigo}.pdf";
+            await JSRuntime.InvokeVoidAsync("openAndPrintPdf", pdfUrl);
+
+            NavigationManager.NavigateTo($"/checkins?reserva={CodigoReserva}",replace: false);
+
+            ToastService.ShowSuccess($"Documento RGPD gerado com sucesso.");
         }
         catch (Exception ex)
         {

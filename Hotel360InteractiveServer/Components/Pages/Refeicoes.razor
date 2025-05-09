@@ -1,9 +1,6 @@
 ﻿@page "/refeicoes"
 @attribute [Authorize(Roles = "Admin, Refeições")]
 @using System.Globalization
-@using Hotel360InteractiveServer.Controller
-@using Hotel360InteractiveServer.Data
-@using Hotel360InteractiveServer.Models
 @inject ApplicationDbContext dbContext
 
 <h3>Refeições</h3>

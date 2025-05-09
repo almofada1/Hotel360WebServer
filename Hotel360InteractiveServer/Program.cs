@@ -64,7 +64,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
-
+builder.Services.AddSingleton<DatabaseInfoService>();
 
 var app = builder.Build();
 

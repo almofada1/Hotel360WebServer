@@ -1,29 +1,8 @@
 ﻿@page "/"
 @using Microsoft.Data.SqlClient
 @inject IConfiguration Configuration
+@inject DatabaseInfoService DbInfo
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hotel Mondego</h1>
-<h3>Connected Databases</h3>
-<ul>
-    @foreach (var db in DatabaseNames)
-    {
-        <li>@db</li>
-    }
-</ul>
-
-@code {
-    private List<string> DatabaseNames = new();
-
-    protected override void OnInitialized()
-    {
-        foreach (var kv in Configuration.GetSection("ConnectionStrings").GetChildren())
-        {
-            var name = kv.Key;
-            var value = kv.Value;
-            var b = new SqlConnectionStringBuilder(value);
-            DatabaseNames.Add($"{name}: {b.InitialCatalog}");
-        }
-    }
-}
+<h1>DB: @DbInfo.DefaultDatabaseName</h1>
