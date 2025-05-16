@@ -27,7 +27,11 @@
                 <div class="col-md-4 mb-3">
                     <div class="card h-100" style="cursor: pointer;" @onclick="() => ShowModal(checkin)">
                         <div class="card-body">
-                            <h4 class="card-title"><strong>Reserva: </strong>@checkin.CodigoReserva</h4>
+                            <h4 class="card-title"><strong>Reserva: </strong>
+                                @((checkin.LinhaReserva == "1") ? 
+                                checkin.CodigoReserva : 
+                                $"{checkin.CodigoReserva}-{checkin.LinhaReserva}")
+                            </h4>
                             <p class="card-text">
                                 <strong>Nome:</strong> @checkin.NomeHospede<br />
                                 <strong>Apelido:</strong> @checkin.ApelidoHospede<br />

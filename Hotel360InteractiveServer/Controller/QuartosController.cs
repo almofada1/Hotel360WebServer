@@ -1,9 +1,11 @@
 ﻿using System.Drawing;
 using Hotel360InteractiveServer.Data;
 using Hotel360InteractiveServer.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Hotel360InteractiveServer.Controller
 {
+    [Authorize(Roles = "Quartos, Admin")]
     public class QuartosController
     {
         public static List<Quarto> ListaQuartos { get; set; } = new List<Quarto>();

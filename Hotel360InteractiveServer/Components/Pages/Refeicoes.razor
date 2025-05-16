@@ -1,6 +1,7 @@
 ﻿@page "/refeicoes"
 @attribute [Authorize(Roles = "Admin, Refeições")]
 @using System.Globalization
+@inject IToastService ToastService
 @inject ApplicationDbContext dbContext
 
 <h3>Refeições</h3>
@@ -55,13 +56,13 @@ else
                     var totalCount = adults + children;
 
                     <div class="col-md-3 col-sm-6 mb-2"
-                         @onclick="() => OnMealSelected(m)"
-                         style="cursor:pointer; max-width:240px">
+                    @onclick="() => OnMealSelected(m)"
+                    style="cursor:pointer; max-width:240px">
                         <SummaryCard Title="@(m == MealType.PequenoAlmoco ? "Pequenos Almoços" : m == MealType.Almoco ? "Almoços" : "Jantares")"
-                                     Count="@totalCount"
-                                     Caption="@($"C {children} / A {adults}")"
-                                     Background="@(SelectedMeal == m ? "bg-primary text-white" : "bg-secondary bg-opacity-50 text-dark")"
-                                     Icon="@(m == MealType.PequenoAlmoco ? "fa-coffee" : m == MealType.Almoco ? "fa-utensils" : "fa-drumstick-bite")" />
+                        Count="@totalCount"
+                        Caption="@($"C {children} / A {adults}")"
+                        Background="@(SelectedMeal == m ? "bg-primary text-white" : "bg-secondary bg-opacity-50 text-dark")"
+                        Icon="@(m == MealType.PequenoAlmoco ? "fa-coffee" : m == MealType.Almoco ? "fa-utensils" : "fa-drumstick-bite")" />
                     </div>
                 }
             </div>
@@ -86,11 +87,11 @@ else
 
                         <!-- Entire row is now clickable -->
                         <tr class="clickable-row"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#@detailId"
-                            aria-expanded="false"
-                            aria-controls="@detailId"
-                            style="cursor:pointer">
+                        data-bs-toggle="collapse"
+                        data-bs-target="#@detailId"
+                        aria-expanded="false"
+                        aria-controls="@detailId"
+                        style="cursor:pointer">
                             <td>@day.Date.ToString("dd/MM/yyyy")</td>
                             <td>@day.Entries.Sum(e => e.NumeroAdultos)</td>
                             <td>@day.Entries.Sum(e => e.NumeroCriancas)</td>
@@ -102,20 +103,31 @@ else
                                 <table class="table table-sm mb-0">
                                     <thead>
                                         <tr class="table-active">
-                                            <th>Adultos</th>
-                                            <th>Crianças</th>
+                                            <th>Confirmação</th>
                                             <th>Nome</th>
                                             <th>Apelido</th>
+                                            <th>ID Reserva</th>
+                                            <th>Quarto</th>
+                                            <th>Adultos</th>
+                                            <th>Crianças</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var e in day.Entries)
                                         {
                                             <tr>
-                                                <td>@e.NumeroAdultos</td>
-                                                <td>@e.NumeroCriancas</td>
+                                                <td class="text-center">
+                                                    <InputCheckbox 
+                                                    @bind-Value="e.Confirmado" 
+                                                    @onchange="() => OnConfirmChanged(e)" />
+                                                </td>
+                                                @* Confirmar vinda às refeicoes (POR CONTINUAR) *@
                                                 <td>@e.NomeHospede</td>
                                                 <td>@e.ApelidoHospede</td>
+                                                <td>@e.CodigoReserva</td>
+                                                <td>@e.CodigoAlojamento</td>
+                                                <td>@e.NumeroAdultos</td>
+                                                <td>@e.NumeroCriancas</td>
                                             </tr>
                                         }
                                     </tbody>
@@ -131,7 +143,7 @@ else
 }
 
 @code {
-    private DateTime _from = DateTime.Today.AddDays(-1);
+    private DateTime _from;
     private DateTime From
     {
         get => _from;
@@ -145,7 +157,7 @@ else
         }
     }
 
-    private DateTime _to = DateTime.Today;
+    private DateTime _to;
     private DateTime To
     {
         get => _to;
@@ -173,6 +185,8 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        _from = await RefeicoesController.GetDia(dbContext);
+        _to = _from;
         await LoadData();
         IsLoadingPage = false;
     }
@@ -228,13 +242,77 @@ else
             MealType.Jantar => RawList.Where(r => r.Jantar),
         };
 
-
         FilteredGrouped = filtered
             .GroupBy(r => r.DataRefeicao.Date)
             .OrderBy(g => g.Key)
-            .Select(g => new DayGroup { Date = g.Key, Entries = g.ToList() })
+            .Select(g => new DayGroup
+                {
+                    Date = g.Key,
+                    Entries = AggregateUnnamed(g.ToList())
+                })
             .ToList();
     }
+
+    /// <summary>
+    /// Retorna uma lista de Refeicao onde as entradas sem nome/apelido
+    /// são substituídas por UMA só agregação.
+    /// </summary>
+    private List<Refeicao> AggregateUnnamed(List<Refeicao> list)
+    {
+        // 1) Entradas com nome/apelido
+        var named = list
+            .Where(r => !string.IsNullOrWhiteSpace(r.NomeHospede)
+                     || !string.IsNullOrWhiteSpace(r.ApelidoHospede))
+            .ToList();
+
+        // 2) Entradas SEM nome E SEM apelido
+        var unnamed = list
+            .Where(r => string.IsNullOrWhiteSpace(r.NomeHospede)
+                     && string.IsNullOrWhiteSpace(r.ApelidoHospede))
+            .ToList();
+
+        // 3) Se houver, cria agregação
+        if (unnamed.Any())
+        {
+            var agregada = new Refeicao
+                {
+                    NomeHospede = "(Sem Nome)",
+                    ApelidoHospede = "",
+                    NumeroAdultos = unnamed.Sum(r => r.NumeroAdultos),
+                    NumeroCriancas = unnamed.Sum(r => r.NumeroCriancas),
+                    // Copie outras propriedades fixas se precisar (DataRefeicao, flags de meal, etc.)
+                    DataRefeicao = unnamed.First().DataRefeicao,
+                    PequenoAlmoco = unnamed.First().PequenoAlmoco,
+                    Almoco = unnamed.First().Almoco,
+                    Jantar = unnamed.First().Jantar
+                };
+
+            named.Add(agregada);
+        }
+
+        return named;
+    }
+    private async Task OnConfirmChanged(Refeicao refeicao)
+    {
+        try
+        {
+            // // Se você tiver um endpoint API ou método no Controller:
+            // await RefeicoesController.SetConfirmacaoAsync(dbContext,
+            //     reserva: refeicao.CodigoReserva,
+            //     linha: refeicao.LinhaReserva,    // caso precise para chave
+            //     data: refeicao.DataRefeicao,
+            //     confirmado: refeicao.Confirmado
+            // );
+
+            ToastService.ShowSuccess($"Confirmado: {refeicao.NomeHospede} {(refeicao.Confirmado ? "✔" : "✘")}");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError("Não foi possível salvar a confirmação.");
+            Console.Error.WriteLine(ex);
+        }
+    }
+
 
     class DayGroup
     {

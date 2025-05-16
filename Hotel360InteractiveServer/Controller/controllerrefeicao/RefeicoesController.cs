@@ -1,8 +1,10 @@
 ﻿using Hotel360InteractiveServer.Data;
 using Hotel360InteractiveServer.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Hotel360InteractiveServer.Controller
 {
+    [Authorize(Roles = "Refeições, Admin")]
     public class RefeicoesController
     {
         private const string BaseSql = @"
@@ -130,6 +132,12 @@ ORDER BY RF.Data, R.Quarto, R.Codigo, R.LinhaReserva, RA.DataInicio;";
                 Logs.Erro("Refeições não foram carregadas!", ex);
                 return new List<Refeicao>();
             }
+        }
+        public static async Task<DateTime> GetDia(ApplicationDbContext dbContext)
+        {
+            string sql = "SELECT datahotel FROM whotparametros";
+            var result = await dbContext.QueryAsync<DateTime>(sql);
+            return result.FirstOrDefault();
         }
     }
 }

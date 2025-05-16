@@ -43,5 +43,6 @@
         public string SerieFP { get; set; }
         public int NumDocFP { get; set; }
         public double ValorPendente { get; set; }
+        public bool Confirmado { get; set; }
     }
 }

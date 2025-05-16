@@ -11,15 +11,15 @@
     </ul>
 </div>
 <div class="modal-footer">
-    <button class="btn btn-danger" @onclick="Cancel">Não</button>
-    <button class="btn btn-secondary" @onclick="Confirm">Sim</button>
+    <button class="btn btn-danger" style="margin-right:15px" @onclick="Cancel">Cancelar</button>
+    <button class="btn btn-secondary" @onclick="Confirm">Gravar</button>
 </div>
 
 @code {
-  [CascadingParameter] BlazoredModalInstance ModalInstance { get; set; } = default!;
+    [CascadingParameter] BlazoredModalInstance ModalInstance { get; set; } = default!;
 
-  [Parameter] public List<(string Codigo, string Old, string New)> Changes { get; set; } = new();
+    [Parameter] public List<(string Codigo, string Old, string New)> Changes { get; set; } = new();
 
-  private Task Cancel()   => ModalInstance.CancelAsync();
-  private Task Confirm()  => ModalInstance.CloseAsync(ModalResult.Ok(true));
+    private Task Cancel()   => ModalInstance.CancelAsync();
+    private Task Confirm()  => ModalInstance.CloseAsync(ModalResult.Ok(true));
 }

@@ -35,13 +35,13 @@ builder.Services.AddScoped<IdentityUserAccessor>();
 builder.Services.AddScoped<IdentityRedirectManager>();
 builder.Services.AddScoped<AuthenticationStateProvider, IdentityRevalidatingAuthenticationStateProvider>();
 
-var DefaultConnection = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+var DefaultConnection = builder.Configuration.GetConnectionString("WINTOUCH")
+    ?? throw new InvalidOperationException("Connection string 'WINTOUCH' not found.");
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(DefaultConnection));
 
-var authDbConnection = builder.Configuration.GetConnectionString("AuthConnection")
-    ?? throw new InvalidOperationException("Connection string 'AuthConnection' not found.");
+var authDbConnection = builder.Configuration.GetConnectionString("PORTALGOVERNANTAS")
+    ?? throw new InvalidOperationException("Connection string 'PORTALGOVERNANTAS' not found.");
 builder.Services.AddDbContext<AuthDbContext>(options =>
 options.UseSqlServer(authDbConnection));
 
@@ -97,6 +97,8 @@ app.MapAdditionalIdentityEndpoints();
 using (var scope = app.Services.CreateScope())
 {
     var authContext = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    var appContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await appContext.Database.MigrateAsync();
     await authContext.Database.MigrateAsync();
 }
 

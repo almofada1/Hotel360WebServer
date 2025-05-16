@@ -17,7 +17,7 @@ namespace Hotel360InteractiveServer.Data
         }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IConfiguration configuration)
-            : this(options) => _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            : this(options) => _connectionString = configuration.GetConnectionString("WINTOUCH")!;
 
         public async Task<IEnumerable<T>> QueryAsync<T>(string sql, object parameters = null)
         {

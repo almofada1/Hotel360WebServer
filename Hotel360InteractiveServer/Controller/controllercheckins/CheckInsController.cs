@@ -1,10 +1,12 @@
 ﻿using System.Data;
 using Hotel360InteractiveServer.Data;
 using Hotel360InteractiveServer.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Hotel360InteractiveServer.Controller
 {
-    class CheckInsController
+    [Authorize(Roles = "Check-Ins, Admin")]
+    public class CheckInsController
     {
         public static async Task<List<Wgcpaises>> GetPaises(ApplicationDbContext dbContext)
         {
@@ -146,12 +148,7 @@ namespace Hotel360InteractiveServer.Controller
 
                 var checkInsResult = await dbContext.QueryAsync<CheckIn>(sql);
 
-                var groupedCheckIns = checkInsResult
-                                      .GroupBy(o => o.CodigoReserva)
-                                      .Select(g => g.FirstOrDefault())
-                                      .ToList();
-
-                return groupedCheckIns;
+                return checkInsResult.ToList();
             }
             catch (Exception ex)
             {
@@ -204,9 +201,12 @@ namespace Hotel360InteractiveServer.Controller
                 string sql = @"
                     UPDATE whotreservas 
                     SET tiporeserva = 'CKI' 
-                    WHERE codigo = @CodigoReserva";
+                    WHERE codigo = @CodigoReserva AND linhareserva = @LinhaReserva";
 
-                var parameters = new { CodigoReserva = cki.CodigoReserva };
+                var parameters = new { 
+                    CodigoReserva = cki.CodigoReserva,
+                    LinhaReserva = cki.LinhaReserva
+                };
                 int rowsAffected = await dbContext.ExecuteAsync(sql, parameters);
                 return rowsAffected > 0;
             }
