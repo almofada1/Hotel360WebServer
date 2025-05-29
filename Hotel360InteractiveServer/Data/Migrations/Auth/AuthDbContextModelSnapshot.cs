@@ -87,26 +87,6 @@ namespace Hotel360InteractiveServer.Data.Migrations.Auth
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Hotel360InteractiveServer.Models.ConfirmRefeicao", b =>
-                {
-                    b.Property<string>("CodigoRefeicao")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool>("Confirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("DataRefeicao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TipoRefeicao")
-                        .HasColumnType("int");
-
-                    b.HasKey("CodigoRefeicao");
-
-                    b.ToTable("ConfirmRefeicao");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")

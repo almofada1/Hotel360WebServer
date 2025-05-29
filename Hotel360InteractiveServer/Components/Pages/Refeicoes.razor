@@ -21,22 +21,23 @@ else
                 <div class="col-auto">
                     <label class="form-label mb-0 me-2">De</label>
                     <input type="date"
-                    class="form-control"
-                    @bind="From"
-                    onkeydown="return false"
-                    onpaste="return false" />
+                           class="form-control"
+                           @bind="From" />
                 </div>
                 <div class="col-auto">
                     <label class="form-label mb-0 me-2">Até</label>
                     <input type="date"
-                    class="form-control"
-                    @bind="To"
-                    onkeydown="return false"
-                    onpaste="return false" />
+                           class="form-control"
+                           @bind="To" />
+                </div>
+
+                <div class="col-auto" style="margin-top:20px">
+                    <button class="btn btn-primary" @onclick="ReloadDataClicked">Atualizar</button>
                 </div>
             </div>
         </div>
     </div>
+
 
     <!-- Cards Section -->
     @if (IsLoadingData)
@@ -107,6 +108,7 @@ else
                                             <th>Nome</th>
                                             <th>Apelido</th>
                                             <th>ID Reserva</th>
+                                            <th>Linha reserva</th>
                                             <th>Quarto</th>
                                             <th>Adultos</th>
                                             <th>Crianças</th>
@@ -117,15 +119,13 @@ else
                                         {
                                             <tr>
                                                 <td class="text-center">
-                                                    <InputCheckbox 
-                                                    @bind-Value="e.Confirmado" 
-                                                    @onchange="() => OnConfirmChanged(e)" />
+                                                    <InputCheckbox @bind-Value="e.Confirmado" @bind-Value:after="() => OnConfirmChanged(e)" />
                                                 </td>
-                                                @* Confirmar vinda às refeicoes (POR CONTINUAR) *@
                                                 <td>@e.NomeHospede</td>
                                                 <td>@e.ApelidoHospede</td>
                                                 <td>@e.CodigoReserva</td>
                                                 <td>@e.CodigoAlojamento</td>
+                                                <td>@e.LinhaReserva</td>
                                                 <td>@e.NumeroAdultos</td>
                                                 <td>@e.NumeroCriancas</td>
                                             </tr>
@@ -152,7 +152,7 @@ else
             if (_from != value)
             {
                 _from = value;
-                _ = ReloadData();
+                // Remove automatic reload here
             }
         }
     }
@@ -166,9 +166,20 @@ else
             if (_to != value)
             {
                 _to = value;
-                _ = ReloadData();
+                // Remove automatic reload here
             }
         }
+    }
+
+    private async Task ReloadDataClicked()
+    {
+        IsLoadingData = true;
+        StateHasChanged();
+
+        await LoadData();
+
+        IsLoadingData = false;
+        StateHasChanged();
     }
 
     private bool IsLoadingPage { get; set; } = true;
@@ -205,23 +216,58 @@ else
 
     private async Task LoadData()
     {
-        RawList = (await RefeicoesController.GetRefeicoesData(dbContext, From, To)).ToList();
+        // 1) Load all meals as before
+        RawList = (await RefeicoesController
+                       .GetRefeicoesData(dbContext, From, To))
+                  .ToList();
 
-        MealTotals = new Dictionary<MealType, (int, int)>
+        // 2) Load all existing confirmations in that date range
+        var confirms = (await RefeicoesController.GetConfirmacoesAsync(dbContext, From, To)).ToLookup(
+                         c => (c.CodigoRefeicao, c.DataRefeicao.Date, c.TipoRefeicao),
+                         c => c.Confirmed);
+
+        // 3) For each meal, set its Confirmado flag — and if missing, insert a default row
+        foreach (var r in RawList)
         {
-            [MealType.PequenoAlmoco] = (
-                Adults: RawList.Where(r => r.PequenoAlmoco).Sum(r => r.NumeroAdultos),
-                Children: RawList.Where(r => r.PequenoAlmoco).Sum(r => r.NumeroCriancas)
-            ),
-            [MealType.Almoco] = (
-                Adults: RawList.Where(r => r.Almoco).Sum(r => r.NumeroAdultos),
-                Children: RawList.Where(r => r.Almoco).Sum(r => r.NumeroCriancas)
-            ),
-            [MealType.Jantar] = (
-                Adults: RawList.Where(r => r.Jantar).Sum(r => r.NumeroAdultos),
-                Children: RawList.Where(r => r.Jantar).Sum(r => r.NumeroCriancas)
-            )
-        };
+            var code = $"{r.CodigoReserva}_{r.LinhaReserva}";
+            var date = r.DataRefeicao.Date;
+            var type = r.PequenoAlmoco ? nameof(tipoRefeicao.PequenoAlmoco)
+                     : r.Almoco ? nameof(tipoRefeicao.Almoco)
+                     : r.Jantar ? nameof(tipoRefeicao.Jantar)
+                                       : throw new InvalidOperationException();
+
+            // does a confirmation row already exist?
+            var hasConfirm = confirms.Contains((code, date, type));
+
+            if (hasConfirm)
+            {
+                // use the saved value
+                r.Confirmado = confirms[(code, date, type)].First();
+            }
+            else
+            {
+                // no record yet: create one (will INSERT via your MERGE)
+                r.Confirmado = false;
+                await RefeicoesController.SetConfirmacaoAsync(dbContext, r);
+            }
+        }
+
+        // 4) now recompute totals & grouping, exactly as before
+        MealTotals = new Dictionary<MealType, (int, int)>
+            {
+                [MealType.PequenoAlmoco] = (
+                    Adults: RawList.Where(r => r.PequenoAlmoco).Sum(r => r.NumeroAdultos),
+                    Children: RawList.Where(r => r.PequenoAlmoco).Sum(r => r.NumeroCriancas)
+                ),
+                [MealType.Almoco] = (
+                    Adults: RawList.Where(r => r.Almoco).Sum(r => r.NumeroAdultos),
+                    Children: RawList.Where(r => r.Almoco).Sum(r => r.NumeroCriancas)
+                ),
+                [MealType.Jantar] = (
+                    Adults: RawList.Where(r => r.Jantar).Sum(r => r.NumeroAdultos),
+                    Children: RawList.Where(r => r.Jantar).Sum(r => r.NumeroCriancas)
+                )
+            };
 
         ApplyFilter();
     }
@@ -292,17 +338,14 @@ else
 
         return named;
     }
+
     private async Task OnConfirmChanged(Refeicao refeicao)
     {
         try
         {
+
             // // Se você tiver um endpoint API ou método no Controller:
-            // await RefeicoesController.SetConfirmacaoAsync(dbContext,
-            //     reserva: refeicao.CodigoReserva,
-            //     linha: refeicao.LinhaReserva,    // caso precise para chave
-            //     data: refeicao.DataRefeicao,
-            //     confirmado: refeicao.Confirmado
-            // );
+            await RefeicoesController.SetConfirmacaoAsync(dbContext, refeicao);
 
             ToastService.ShowSuccess($"Confirmado: {refeicao.NomeHospede} {(refeicao.Confirmado ? "✔" : "✘")}");
         }
@@ -312,7 +355,6 @@ else
             Console.Error.WriteLine(ex);
         }
     }
-
 
     class DayGroup
     {

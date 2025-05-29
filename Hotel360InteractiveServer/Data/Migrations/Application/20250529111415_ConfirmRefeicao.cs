@@ -1,12 +1,11 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace Hotel360InteractiveServer.Data.Migrations.Auth
+namespace Hotel360InteractiveServer.Data.Migrations.Application
 {
     /// <inheritdoc />
-    public partial class CreateRefeicoesConfirmacaoTable : Migration
+    public partial class ConfirmRefeicao : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,7 +16,7 @@ namespace Hotel360InteractiveServer.Data.Migrations.Auth
                 {
                     CodigoRefeicao = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     DataRefeicao = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    TipoRefeicao = table.Column<int>(type: "int", nullable: false),
+                    TipoRefeicao = table.Column<string>(type: "nvarchar(50)", nullable: false),
                     Confirmed = table.Column<bool>(type: "bit", nullable: false)
                 });
         }

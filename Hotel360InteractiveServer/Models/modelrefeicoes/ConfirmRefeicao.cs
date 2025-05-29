@@ -2,7 +2,7 @@
 
 namespace Hotel360InteractiveServer.Models
 {
-    public enum TipoRefeicao
+    public enum tipoRefeicao
     {
         PequenoAlmoco,
         Almoco,
@@ -19,7 +19,7 @@ namespace Hotel360InteractiveServer.Models
         public DateTime DataRefeicao { get; set; }
 
         [Required]
-        public TipoRefeicao TipoRefeicao { get; set; }
+        public string TipoRefeicao { get; set; }
 
         [Required]
         public bool Confirmed { get; set; }

@@ -1,6 +1,7 @@
 ﻿using Hotel360InteractiveServer.Data;
 using Hotel360InteractiveServer.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hotel360InteractiveServer.Controller
 {
@@ -138,6 +139,51 @@ ORDER BY RF.Data, R.Quarto, R.Codigo, R.LinhaReserva, RA.DataInicio;";
             string sql = "SELECT datahotel FROM whotparametros";
             var result = await dbContext.QueryAsync<DateTime>(sql);
             return result.FirstOrDefault();
+        }
+        public static async Task SetConfirmacaoAsync(ApplicationDbContext dbContext, Refeicao refeicao)
+        {
+            string codigoRefeicao = $"{refeicao.CodigoReserva}_{refeicao.LinhaReserva}";
+
+            tipoRefeicao tipoRefeicao;
+            if (refeicao.PequenoAlmoco)
+                tipoRefeicao = tipoRefeicao.PequenoAlmoco;
+            else if (refeicao.Almoco)
+                tipoRefeicao = tipoRefeicao.Almoco;
+            else if (refeicao.Jantar)
+                tipoRefeicao = tipoRefeicao.Jantar;
+            else
+                throw new InvalidOperationException("Tipo de refeição não especificado.");
+
+            string sql = @"
+                MERGE INTO ConfirmRefeicao AS Target
+                USING (SELECT @CodigoRefeicao AS CodigoRefeicao, @DataRefeicao AS DataRefeicao, @TipoRefeicao AS TipoRefeicao) AS Source
+                ON Target.CodigoRefeicao = Source.CodigoRefeicao AND Target.DataRefeicao = Source.DataRefeicao AND Target.TipoRefeicao = Source.TipoRefeicao
+                WHEN MATCHED THEN
+                    UPDATE SET Confirmed = @Confirmed
+                WHEN NOT MATCHED THEN
+                    INSERT (CodigoRefeicao, DataRefeicao, TipoRefeicao, Confirmed)
+                    VALUES (@CodigoRefeicao, @DataRefeicao, @TipoRefeicao, @Confirmed);";
+
+            await dbContext.ExecuteAsync(sql, new
+            {
+                CodigoRefeicao = codigoRefeicao,
+                DataRefeicao = refeicao.DataRefeicao.Date,
+                TipoRefeicao = tipoRefeicao.ToString(),
+                Confirmed = refeicao.Confirmado
+            });
+        }
+        public static async Task<IEnumerable<ConfirmRefeicao>> GetConfirmacoesAsync(ApplicationDbContext dbContext, DateTime from, DateTime to)
+        {
+            string sql = @"
+                SELECT CodigoRefeicao, DataRefeicao, TipoRefeicao, Confirmed
+                FROM ConfirmRefeicao
+                WHERE DataRefeicao BETWEEN @FromDate AND @ToDate";
+
+            return await dbContext.QueryAsync<ConfirmRefeicao>(sql, new
+            {
+                FromDate = from.Date,
+                ToDate = to.Date
+            });
         }
     }
 }

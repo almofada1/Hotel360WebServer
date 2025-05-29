@@ -1,6 +1,7 @@
 using System.Data;
 using System.Data.Common;
 using Dapper;
+using Hotel360InteractiveServer.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,19 @@ namespace Hotel360InteractiveServer.Data
         {
             base.OnConfiguring(optionsBuilder);
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder); // Importante para configurações de identidade
+
+            modelBuilder.Entity<ConfirmRefeicao>(entity =>
+            {
+                entity.Property(e => e.TipoRefeicao)
+                      .HasConversion<string>()
+                      .HasMaxLength(50);
+            });
+        }
+
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IConfiguration configuration)
             : this(options) => _connectionString = configuration.GetConnectionString("WINTOUCH")!;

@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace Hotel360InteractiveServer.Data.Migrations.Auth
+namespace Hotel360InteractiveServer.Data.Migrations.Application
 {
-    [DbContext(typeof(AuthDbContext))]
-    [Migration("20250516162250_CreateRefeicoesConfirmacaoTable")]
-    partial class CreateRefeicoesConfirmacaoTable
+    [DbContext(typeof(ApplicationDbContext))]
+    [Migration("20250529111415_ConfirmRefeicao")]
+    partial class ConfirmRefeicao
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -88,26 +88,6 @@ namespace Hotel360InteractiveServer.Data.Migrations.Auth
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("Hotel360InteractiveServer.Models.ConfirmRefeicao", b =>
-                {
-                    b.Property<string>("CodigoRefeicao")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<bool>("Confirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("DataRefeicao")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("TipoRefeicao")
-                        .HasColumnType("int");
-
-                    b.HasKey("CodigoRefeicao");
-
-                    b.ToTable("ConfirmRefeicao");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

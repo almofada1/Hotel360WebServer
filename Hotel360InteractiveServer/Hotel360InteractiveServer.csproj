@@ -24,7 +24,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Data\Migrations\Application\" />
     <Folder Include="wwwroot\resources\assinaturas\" />
   </ItemGroup>
 
