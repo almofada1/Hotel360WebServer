@@ -7,5 +7,6 @@
         public string CodigoCentral { get; set; }
         public string CorEstado { get; set; }
         public int Ativo { get; set; }
+        public bool DisponivelPortal { get; set; }
     }
 }

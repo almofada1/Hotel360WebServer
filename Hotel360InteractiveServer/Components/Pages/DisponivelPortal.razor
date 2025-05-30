@@ -1,0 +1,81 @@
+﻿@page "/portal"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApplicationDbContext DbContext
+@inject IToastService ToastService
+
+<PageTitle>Disponível Portal</PageTitle>
+
+<h3>Disponível Portal</h3>
+
+@if (RoomStates == null)
+{
+    <p><em>Carregando…</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Descrição</th>
+                <th>Disponível no Portal</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var state in RoomStates)
+            {
+                <tr>
+                    <td>@state.Descricao</td>
+                    <td>
+                        <InputCheckbox @bind-Value="state.DisponivelPortal"
+                        @bind-Value:after="() => ToggleDisponivelPortal(state)" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<EstadoQuarto>? RoomStates;
+
+    protected override async Task OnInitializedAsync()
+    {
+        const string sql = @"
+            SELECT
+                Codigo,
+                Descricao,
+                CodigoCentral,
+                ColorEstado,
+                Activo,
+                cdu_disponivelPortal AS DisponivelPortal
+            FROM whotestadoquartos
+            ORDER BY Descricao";
+
+        RoomStates = (await DbContext.QueryAsync<EstadoQuarto>(sql))
+                        .ToList();
+    }
+
+
+    private async Task ToggleDisponivelPortal(EstadoQuarto state)
+    {
+        const string updateSql = @"
+            UPDATE whotestadoquartos
+               SET cdu_disponivelPortal = @flag
+             WHERE Codigo = @codigo";
+
+        try
+        {
+            await DbContext.ExecuteAsync(updateSql, new
+            {
+                flag = state.DisponivelPortal ? 1 : 0,
+                codigo = state.Codigo
+            });
+
+            ToastService.ShowSuccess($"Estado \"{state.Descricao}\" {(state.DisponivelPortal ? "ativado" : "desativado")} no portal.");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Erro ao atualizar \"{state.Descricao}\": {ex.Message}");
+        }
+    }
+}
